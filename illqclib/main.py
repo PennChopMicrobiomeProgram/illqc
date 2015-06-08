@@ -77,18 +77,18 @@ class Trimmomatic(object):
 
 def main(argv=None):
     p = argparse.ArgumentParser()
-    p.add_argument("--forward_reads", required=True,
+    p.add_argument("--forward-reads", required=True,
         type=argparse.FileType("r"),
         help="Forward read filepath (Gzipped FASTQ format)")
-    p.add_argument("--reverse_reads", required=True,
+    p.add_argument("--reverse-reads", required=True,
         type=argparse.FileType("r"),
         help="Forward read filepath (Gzipped FASTQ format)")
-    p.add_argument("--output_dir", required=True,
+    p.add_argument("--output-dir", required=True,
         help="Output sequence data directory")
-    p.add_argument("--summary_file", required=True,
+    p.add_argument("--summary-file", required=True,
         type=argparse.FileType("w"),
         help="Summary filepath")
-    p.add_argument("--config_file",
+    p.add_argument("--config-file",
         type=argparse.FileType("r"),
         help="Configuration file (JSON format)")
     args = p.parse_args(argv)
