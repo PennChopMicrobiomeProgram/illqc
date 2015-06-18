@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 # Get version number from package
-exec(open('illqc/version.py').read())
+exec(open('illqclib/version.py').read())
 
 setup(
     name='illQC',
