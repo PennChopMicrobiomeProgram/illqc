@@ -12,6 +12,6 @@ setup(
     author='Kyle Bittinger',
     author_email='kylebittinger@gmail.com',
     url='https://github.com/PennChopMicrobiomeProgram',
-    packages=['illqc'],
+    packages=['illqclib'],
     scripts=['scripts/illqc.py'],
     )
