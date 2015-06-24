@@ -30,11 +30,9 @@ class Trimmomatic(object):
         rev_paired_fp = os.path.join(out_dir, os.path.basename(rev_fp))
 
         fwd_unpaired_fp = os.path.join(
-            out_dir,
-            "%s_unpaired.fastq" % remove_file_ext(remove_file_ext(fwd_fp)))
+            out_dir, "%s_unpaired.fastq" % remove_file_ext(fwd_fp))
         rev_unpaired_fp = os.path.join(
-            out_dir,
-            "%s_unpaired.fastq" % remove_file_ext(remove_file_ext(rev_fp)))
+            out_dir, "%s_unpaired.fastq" % remove_file_ext(rev_fp))
 
         trimlog_fp = os.path.join(out_dir, "trimmomatic.log")
         
