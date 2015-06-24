@@ -13,12 +13,12 @@ class TrimmomaticTests(unittest.TestCase):
             "slidingwindow": (4, 15),
             "minlen": 36,
             })
-        observed = app.make_command("a.fastq.gz", "b.fastq.gz", "mydir")
+        observed = app.make_command("a.fastq", "b.fastq", "mydir")
         expected = [
             'java', '-jar', 'trimmomatic-0.30.jar', 'PE', '-phred33',
-            'a.fastq.gz', 'b.fastq.gz',
-            'mydir/a.fastq.gz', 'mydir/b.fastq.gz',
-            'mydir/a_unpaired.fastq.gz', 'mydir/b_unpaired.fastq.gz',
+            'a.fastq', 'b.fastq',
+            'mydir/a.fastq', 'mydir/b.fastq',
+            'mydir/a_unpaired.fastq', 'mydir/b_unpaired.fastq',
             'ILLUMINACLIP:adapters/NexteraPE-PE.fa:2:30:10',
             'LEADING:3', 'TRAILING:3', 'SLIDINGWINDOW:4:15', 'MINLEN:36',
             ]
