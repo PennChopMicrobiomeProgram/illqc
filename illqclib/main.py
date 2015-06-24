@@ -31,10 +31,10 @@ class Trimmomatic(object):
 
         fwd_unpaired_fp = os.path.join(
             out_dir,
-            "%s_unpaired.fastq.gz" % remove_file_ext(remove_file_ext(fwd_fp)))
+            "%s_unpaired.fastq" % remove_file_ext(remove_file_ext(fwd_fp)))
         rev_unpaired_fp = os.path.join(
             out_dir,
-            "%s_unpaired.fastq.gz" % remove_file_ext(remove_file_ext(rev_fp)))
+            "%s_unpaired.fastq" % remove_file_ext(remove_file_ext(rev_fp)))
 
         trimlog_fp = os.path.join(out_dir, "trimmomatic.log")
         
@@ -79,10 +79,10 @@ def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("--forward-reads", required=True,
         type=argparse.FileType("r"),
-        help="Forward reads file (Gzipped FASTQ format)")
+        help="Forward reads file (FASTQ format)")
     p.add_argument("--reverse-reads", required=True,
         type=argparse.FileType("r"),
-        help="Reverse reads file (Gzipped FASTQ format)")
+        help="Reverse reads file (FASTQ format)")
     p.add_argument("--output-dir", required=True,
         help="Output sequence data directory")
     p.add_argument("--summary-file", required=True,
