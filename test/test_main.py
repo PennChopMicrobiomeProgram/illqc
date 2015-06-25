@@ -17,8 +17,8 @@ class TrimmomaticTests(unittest.TestCase):
         expected = [
             'java', '-jar', 'trimmomatic-0.30.jar', 'PE', '-phred33',
             'a.fastq', 'b.fastq',
-            'mydir/a.fastq', 'mydir/b.fastq',
-            'mydir/a_unpaired.fastq', 'mydir/b_unpaired.fastq',
+            'mydir/a.fastq', 'mydir/a_unpaired.fastq',
+            'mydir/b.fastq', 'mydir/b_unpaired.fastq',
             'ILLUMINACLIP:adapters/NexteraPE-PE.fa:2:30:10',
             'LEADING:3', 'TRAILING:3', 'SLIDINGWINDOW:4:15', 'MINLEN:36',
             ]
