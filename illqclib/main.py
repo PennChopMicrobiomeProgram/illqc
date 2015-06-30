@@ -28,12 +28,12 @@ class Trimmomatic(object):
     def make_command(self, fwd_fp, rev_fp, out_dir):
         fwd_paired_fp = os.path.join(out_dir, os.path.basename(fwd_fp))
         rev_paired_fp = os.path.join(out_dir, os.path.basename(rev_fp))
-
+        
         fwd_unpaired_fp = os.path.join(
-            out_dir, "%s_unpaired.fastq" % remove_file_ext(fwd_fp))
+            out_dir, "%s_unpaired.fastq" % os.path.basename(remove_file_ext(fwd_fp)))
         rev_unpaired_fp = os.path.join(
-            out_dir, "%s_unpaired.fastq" % remove_file_ext(rev_fp))
-
+            out_dir, "%s_unpaired.fastq" % os.path.basename(remove_file_ext(rev_fp)))
+        
         trimlog_fp = os.path.join(out_dir, "trimmomatic.log")
         
         adapter_fp = os.path.join(
