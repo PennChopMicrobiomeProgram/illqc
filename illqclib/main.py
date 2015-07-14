@@ -39,7 +39,10 @@ class Trimmomatic(object):
         adapter_fp = os.path.join(
             self.config["adapter_dir"],
             "%s.fa" % self.config["adapter"])
-
+        #check if the adapter file is there
+        with open(adapter_fp) as f:
+            pass
+        
         return [
             "java", "-jar", self.config["trimmomatic_jar_fp"],
             "PE","-phred33",
@@ -101,10 +104,9 @@ def main(argv=None):
     args.forward_reads.close()
     args.reverse_reads.close()
 
-    if os.path.exists(args.output_dir):
-        p.error("Output directory already exists")
-    os.mkdir(args.output_dir)
-
+    if not os.path.exists(args.output_dir):
+        os.mkdir(os.mkdir(args.output_dir))
+    
     app = Trimmomatic(config)
     summary_data = app.run(fwd_fp, rev_fp, args.output_dir)
     save_summary(args.summary_file, config, summary_data)
