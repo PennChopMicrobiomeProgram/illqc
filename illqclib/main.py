@@ -105,7 +105,7 @@ def main(argv=None):
     args.reverse_reads.close()
 
     if not os.path.exists(args.output_dir):
-        os.mkdir(os.mkdir(args.output_dir))
+        os.mkdir(args.output_dir)
     
     app = Trimmomatic(config)
     summary_data = app.run(fwd_fp, rev_fp, args.output_dir)
