@@ -49,7 +49,7 @@ class Trimmomatic(object):
             fwd_fp, rev_fp,
             fwd_paired_fp, fwd_unpaired_fp,
             rev_paired_fp, rev_unpaired_fp,
-            "ILLUMINACLIP:%s:2:30:10" % adapter_fp,
+            "ILLUMINACLIP:%s:2:30:10:8:true" % adapter_fp,
             "LEADING:%d" % self.config["leading"],
             "TRAILING:%d" % self.config["trailing"],
             "SLIDINGWINDOW:%d:%d" % self.config["slidingwindow"],
