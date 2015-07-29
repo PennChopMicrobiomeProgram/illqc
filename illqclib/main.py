@@ -94,27 +94,37 @@ class Fastqc(object):
         args = self.make_command(fwd_fp, rev_fp, out_dir)
         subprocess.check_call(args, stderr=subprocess.STDOUT)
         return (self.parse_fastqc_quality(make_report_fp(out_dir, fwd_fp)),
-                self.parse_fastqc_quality(make_report_fp(out_dir, rev_fp)))
+                self.parse_fastqc_quality(make_report_fp(out_dir, rev_fp)),
+                self.parse_fastqc_summary(make_summary_fp(out_dir, fwd_fp)),
+                self.parse_fastqc_summary(make_summary_fp(out_dir, rev_fp)))
 
     @staticmethod
     def parse_fastqc_quality(output):
         with open(output) as f_in:
             report = f_in.read()
-        tableString  = re.search('\>\>Per base sequence quality.*?\n(.*?)\n\>\>END_MODULE', report, re.DOTALL).group(1)
-        table = parseTable(tableString)
-        return table2dict(table, 0, 1)
+        tableString = re.search('\>\>Per base sequence quality.*?\n(.*?)\n\>\>END_MODULE', report, re.DOTALL).group(1)
+        try:
+            f_s = StringIO.StringIO(tableString)
+            reader = csv.reader(f_s, delimiter='\t')
+            next(reader) # skip header
+            return table2dict(reader, 0, 1)
+        finally:
+            f_s.close()
 
-def parseTable(tableString):
-    f_s = StringIO.StringIO(tableString)
-    reader = csv.reader(f_s, delimiter='\t')
-    next(reader) #skip header
-    return [row for row in reader]
-                
-def table2dict(table, keyIdx, valIdx):
-    return {row[keyIdx]:row[valIdx] for row in table}
+    @staticmethod
+    def parse_fastqc_summary(output):
+        with open(output) as f_in:
+            reader = csv.reader(f_in, delimiter='\t')
+            return table2dict(reader, 1, 0)
+
+def table2dict(reader, keyIdx, valIdx):
+    return {row[keyIdx]:row[valIdx] for row in reader}
 
 def make_report_fp(out_dir, file_dir):
     return os.path.join(out_dir, remove_file_ext(os.path.basename(file_dir))+'_fastqc', 'fastqc_data.txt')
+
+def make_summary_fp(out_dir, file_dir):
+    return os.path.join(out_dir, remove_file_ext(os.path.basename(file_dir))+'_fastqc', 'summary.txt')
 
 def main(argv=None):
     p = argparse.ArgumentParser()
@@ -160,11 +170,11 @@ def main(argv=None):
     summary_data_trim = app.run(fwd_fp, rev_fp, args.output_dir)
 
     fastqc = Fastqc(config)
-    summary_qc_bef_fwd, summary_qc_bef_rev = fastqc.run(fwd_fp, rev_fp, before_trim_dir)
+    _, _, summary_qc_bef_fwd, summary_qc_bef_rev = fastqc.run(fwd_fp, rev_fp, before_trim_dir)
 
-    summary_qc_aft_fwd, summary_qc_aft_rev = fastqc.run(build_paired_fp(args.output_dir, fwd_fp),
-                                                        build_paired_fp(args.output_dir, rev_fp),
-                                                        after_trim_dir)
+    _, _, summary_qc_aft_fwd, summary_qc_aft_rev = fastqc.run(build_paired_fp(args.output_dir, fwd_fp),
+                                                              build_paired_fp(args.output_dir, rev_fp),
+                                                              after_trim_dir)
     
     save_summary(args.summary_file, config,
                  build_summary(summary_data_trim, summary_qc_bef_fwd, summary_qc_bef_rev, summary_qc_aft_fwd, summary_qc_aft_rev))
