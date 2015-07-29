@@ -3,6 +3,9 @@ import collections
 import json
 import os
 import subprocess
+import re
+import csv
+import StringIO
 
 from .version import __version__
 
@@ -14,20 +17,23 @@ default_config = {
     "trailing": 3,
     "slidingwindow": (4, 15),
     "minlen": 36,
+    "fastqc_dir":""
     }
 
 
 def remove_file_ext(fp):
     return os.path.splitext(fp)[0]
 
+def build_paired_fp(out_dir, old_fp):
+    return os.path.join(out_dir, os.path.basename(old_fp))
 
 class Trimmomatic(object):
     def __init__(self, config):
         self.config = config
 
     def make_command(self, fwd_fp, rev_fp, out_dir):
-        fwd_paired_fp = os.path.join(out_dir, os.path.basename(fwd_fp))
-        rev_paired_fp = os.path.join(out_dir, os.path.basename(rev_fp))
+        fwd_paired_fp = build_paired_fp(out_dir, fwd_fp)
+        rev_paired_fp = build_paired_fp(out_dir, rev_fp)
         
         fwd_unpaired_fp = os.path.join(
             out_dir, "%s_unpaired.fastq" % os.path.basename(remove_file_ext(fwd_fp)))
@@ -49,7 +55,7 @@ class Trimmomatic(object):
             fwd_fp, rev_fp,
             fwd_paired_fp, fwd_unpaired_fp,
             rev_paired_fp, rev_unpaired_fp,
-            "ILLUMINACLIP:%s:2:30:10" % adapter_fp,
+            "ILLUMINACLIP:%s:2:30:10:8:true" % adapter_fp,
             "LEADING:%d" % self.config["leading"],
             "TRAILING:%d" % self.config["trailing"],
             "SLIDINGWINDOW:%d:%d" % self.config["slidingwindow"],
@@ -75,6 +81,50 @@ class Trimmomatic(object):
         raise ValueError(
             "Summary line not found in trimming output: %s" % output)
 
+class Fastqc(object):
+    def __init__(sefl,config):
+        sefl.config = config
+
+    def make_command(self, fwd_fp, rev_fp, out_dir):
+        return [
+            self.config["fastqc_dir"],
+            fwd_fp, rev_fp,
+            '-extract', '-q', '-o', out_dir]
+    def run(self, fwd_fp, rev_fp, out_dir):
+        args = self.make_command(fwd_fp, rev_fp, out_dir)
+        subprocess.check_call(args, stderr=subprocess.STDOUT)
+        return (self.parse_fastqc_quality(make_report_fp(out_dir, fwd_fp)),
+                self.parse_fastqc_quality(make_report_fp(out_dir, rev_fp)),
+                self.parse_fastqc_summary(make_summary_fp(out_dir, fwd_fp)),
+                self.parse_fastqc_summary(make_summary_fp(out_dir, rev_fp)))
+
+    @staticmethod
+    def parse_fastqc_quality(output):
+        with open(output) as f_in:
+            report = f_in.read()
+        tableString = re.search('\>\>Per base sequence quality.*?\n(.*?)\n\>\>END_MODULE', report, re.DOTALL).group(1)
+        try:
+            f_s = StringIO.StringIO(tableString)
+            reader = csv.reader(f_s, delimiter='\t')
+            next(reader) # skip header
+            return table2dict(reader, 0, 1)
+        finally:
+            f_s.close()
+
+    @staticmethod
+    def parse_fastqc_summary(output):
+        with open(output) as f_in:
+            reader = csv.reader(f_in, delimiter='\t')
+            return table2dict(reader, 1, 0)
+
+def table2dict(reader, keyIdx, valIdx):
+    return {row[keyIdx]:row[valIdx] for row in reader}
+
+def make_report_fp(out_dir, file_dir):
+    return os.path.join(out_dir, remove_file_ext(os.path.basename(file_dir))+'_fastqc', 'fastqc_data.txt')
+
+def make_summary_fp(out_dir, file_dir):
+    return os.path.join(out_dir, remove_file_ext(os.path.basename(file_dir))+'_fastqc', 'summary.txt')
 
 def main(argv=None):
     p = argparse.ArgumentParser()
@@ -86,6 +136,8 @@ def main(argv=None):
         help="Reverse reads file (FASTQ format)")
     p.add_argument("--output-dir", required=True,
         help="Output sequence data directory")
+    p.add_argument("--qc-output-dir", required=True,
+        help="Fastqc results directory")
     p.add_argument("--summary-file", required=True,
         type=argparse.FileType("w"),
         help="Summary file")
@@ -104,13 +156,31 @@ def main(argv=None):
     args.forward_reads.close()
     args.reverse_reads.close()
 
+    before_trim_dir = os.path.join(args.qc_output_dir, 'before_trim')
+    after_trim_dir = os.path.join(args.qc_output_dir, 'after_trim')
+
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
+    if not os.path.exists(before_trim_dir):
+        os.makedirs(before_trim_dir) # make folders recursively
+    if not os.path.exists(after_trim_dir):
+        os.makedirs(after_trim_dir)
     
     app = Trimmomatic(config)
-    summary_data = app.run(fwd_fp, rev_fp, args.output_dir)
-    save_summary(args.summary_file, config, summary_data)
+    summary_data_trim = app.run(fwd_fp, rev_fp, args.output_dir)
 
+    fastqc = Fastqc(config)
+    _, _, summary_qc_bef_fwd, summary_qc_bef_rev = fastqc.run(fwd_fp, rev_fp, before_trim_dir)
+
+    _, _, summary_qc_aft_fwd, summary_qc_aft_rev = fastqc.run(build_paired_fp(args.output_dir, fwd_fp),
+                                                              build_paired_fp(args.output_dir, rev_fp),
+                                                              after_trim_dir)
+    
+    save_summary(args.summary_file, config,
+                 build_summary(summary_data_trim, summary_qc_bef_fwd, summary_qc_bef_rev, summary_qc_aft_fwd, summary_qc_aft_rev))
+
+def build_summary(trim, qc_bef_fwd, qc_bef_rev, qc_aft_fwd, qc_aft_rev):
+    return {"illqc":trim, "fastqc_bef_fwd":qc_bef_fwd, "fastqc_bef_rev":qc_bef_rev, "fastqc_aft_fwd":qc_aft_fwd, "fastqc_aft_rev":qc_aft_rev}
 
 def save_summary(f, config, data):
     result = {
