@@ -9,16 +9,28 @@ import StringIO
 
 from .version import __version__
 
-default_config = {
-    "trimmomatic_jar_fp": "trimmomatic-0.33.jar",
-    "adapter_dir": "",
-    "adapter": "NexteraPE-PE",
-    "leading": 3,
-    "trailing": 3,
-    "slidingwindow": (4, 15),
-    "minlen": 36,
-    "fastqc_dir":""
+
+def get_config(user_config_file):
+    config = {
+        "trimmomatic_jar_fp": "trimmomatic-0.33.jar",
+        "adapter_dir": "",
+        "adapter": "NexteraPE-PE",
+        "leading": 3,
+        "trailing": 3,
+        "slidingwindow": (4, 15),
+        "minlen": 36,
+        "fastqc_dir": ""
     }
+
+    if user_config_file is None:
+        default_user_config_fp = os.path.expanduser("~/.illqc.json")
+        if os.path.exists(default_user_config_fp):
+            user_config_file = open(default_user_config_fp)
+
+    if user_config_file is not None:
+        user_config = json.load(user_config_file)
+        config.update(user_config)
+    return config
 
 
 def remove_file_ext(fp):
@@ -31,6 +43,11 @@ class Trimmomatic(object):
     def __init__(self, config):
         self.config = config
 
+    @property
+    def _adapter_fp(self):
+        return os.path.join(
+            self.config["adapter_dir"], "%s.fa" % self.config["adapter"])
+
     def make_command(self, fwd_fp, rev_fp, out_dir):
         fwd_paired_fp = build_paired_fp(out_dir, fwd_fp)
         rev_paired_fp = build_paired_fp(out_dir, rev_fp)
@@ -41,21 +58,14 @@ class Trimmomatic(object):
             out_dir, "%s_unpaired.fastq" % os.path.basename(remove_file_ext(rev_fp)))
         
         trimlog_fp = os.path.join(out_dir, "trimmomatic.log")
-        
-        adapter_fp = os.path.join(
-            self.config["adapter_dir"],
-            "%s.fa" % self.config["adapter"])
-        #check if the adapter file is there
-        with open(adapter_fp) as f:
-            pass
-        
+
         return [
             "java", "-jar", self.config["trimmomatic_jar_fp"],
             "PE","-phred33",
             fwd_fp, rev_fp,
             fwd_paired_fp, fwd_unpaired_fp,
             rev_paired_fp, rev_unpaired_fp,
-            "ILLUMINACLIP:%s:2:30:10:8:true" % adapter_fp,
+            "ILLUMINACLIP:%s:2:30:10:8:true" % self._adapter_fp,
             "LEADING:%d" % self.config["leading"],
             "TRAILING:%d" % self.config["trailing"],
             "SLIDINGWINDOW:%d:%d" % self.config["slidingwindow"],
@@ -64,6 +74,10 @@ class Trimmomatic(object):
 
     def run(self, fwd_fp, rev_fp, out_dir):
         args = self.make_command(fwd_fp, rev_fp, out_dir)
+        # Trimmomatic is silent if the adapter file is not found
+        # Check for it before running the program
+        if not os.path.exists(self._adapter_fp):
+            raise ValueError("Adapter file not found: %s" % self._adapter_fp)
         stdout = subprocess.check_output(args, stderr=subprocess.STDOUT)
         return self.parse_trim_summary(stdout)
 
@@ -146,10 +160,7 @@ def main(argv=None):
         help="Configuration file (JSON format)")
     args = p.parse_args(argv)
 
-    config = default_config
-    if args.config_file:
-        user_config = json.load(args.config_file)
-        config.update(user_config)
+    config = get_config(args.config_file)
     
     fwd_fp = args.forward_reads.name
     rev_fp = args.reverse_reads.name
