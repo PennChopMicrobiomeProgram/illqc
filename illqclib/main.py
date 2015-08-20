@@ -3,9 +3,6 @@ import collections
 import json
 import os
 import subprocess
-import re
-import csv
-import StringIO
 
 from .version import __version__
 
@@ -99,46 +96,12 @@ class Fastqc(object):
     def __init__(sefl,config):
         sefl.config = config
 
-    def make_command(self, fwd_fp, rev_fp, out_dir):
-        return [
+    def run(self, fwd_fp, rev_fp, out_dir):
+        args = [
             self.config["fastqc_dir"],
             fwd_fp, rev_fp,
             '-extract', '-q', '-o', out_dir]
-    def run(self, fwd_fp, rev_fp, out_dir):
-        args = self.make_command(fwd_fp, rev_fp, out_dir)
         subprocess.check_call(args, stderr=subprocess.STDOUT)
-        return (self.parse_fastqc_quality(make_report_fp(out_dir, fwd_fp)),
-                self.parse_fastqc_quality(make_report_fp(out_dir, rev_fp)),
-                self.parse_fastqc_summary(make_summary_fp(out_dir, fwd_fp)),
-                self.parse_fastqc_summary(make_summary_fp(out_dir, rev_fp)))
-
-    @staticmethod
-    def parse_fastqc_quality(output):
-        with open(output) as f_in:
-            report = f_in.read()
-        tableString = re.search('\>\>Per base sequence quality.*?\n(.*?)\n\>\>END_MODULE', report, re.DOTALL).group(1)
-        try:
-            f_s = StringIO.StringIO(tableString)
-            reader = csv.reader(f_s, delimiter='\t')
-            next(reader) # skip header
-            return table2dict(reader, 0, 1)
-        finally:
-            f_s.close()
-
-    @staticmethod
-    def parse_fastqc_summary(output):
-        with open(output) as f_in:
-            reader = csv.reader(f_in, delimiter='\t')
-            return table2dict(reader, 1, 0)
-
-def table2dict(reader, keyIdx, valIdx):
-    return {row[keyIdx]:row[valIdx] for row in reader}
-
-def make_report_fp(out_dir, file_dir):
-    return os.path.join(out_dir, remove_file_ext(os.path.basename(file_dir))+'_fastqc', 'fastqc_data.txt')
-
-def make_summary_fp(out_dir, file_dir):
-    return os.path.join(out_dir, remove_file_ext(os.path.basename(file_dir))+'_fastqc', 'summary.txt')
 
 def main(argv=None):
     p = argparse.ArgumentParser()
@@ -178,20 +141,15 @@ def main(argv=None):
         os.makedirs(after_trim_dir)
     
     app = Trimmomatic(config)
-    summary_data_trim = app.run(fwd_fp, rev_fp, args.output_dir)
+    summary = app.run(fwd_fp, rev_fp, args.output_dir)
 
     fastqc = Fastqc(config)
-    _, _, summary_qc_bef_fwd, summary_qc_bef_rev = fastqc.run(fwd_fp, rev_fp, before_trim_dir)
-
-    _, _, summary_qc_aft_fwd, summary_qc_aft_rev = fastqc.run(build_paired_fp(args.output_dir, fwd_fp),
-                                                              build_paired_fp(args.output_dir, rev_fp),
-                                                              after_trim_dir)
+    fastqc.run(fwd_fp, rev_fp, before_trim_dir)
+    fastqc.run(build_paired_fp(args.output_dir, fwd_fp),
+               build_paired_fp(args.output_dir, rev_fp),
+               after_trim_dir)
     
-    save_summary(args.summary_file, config,
-                 build_summary(summary_data_trim, summary_qc_bef_fwd, summary_qc_bef_rev, summary_qc_aft_fwd, summary_qc_aft_rev))
-
-def build_summary(trim, qc_bef_fwd, qc_bef_rev, qc_aft_fwd, qc_aft_rev):
-    return {"illqc":trim, "fastqc_bef_fwd":qc_bef_fwd, "fastqc_bef_rev":qc_bef_rev, "fastqc_aft_fwd":qc_aft_fwd, "fastqc_aft_rev":qc_aft_rev}
+    save_summary(args.summary_file, config, summary)
 
 def save_summary(f, config, data):
     result = {
