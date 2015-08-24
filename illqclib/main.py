@@ -16,7 +16,7 @@ def get_config(user_config_file):
         "trailing": 3,
         "slidingwindow": (4, 15),
         "minlen": 36,
-        "fastqc_dir": ""
+        "fastqc_dir": "fastqc"
     }
     
     if user_config_file is None:
