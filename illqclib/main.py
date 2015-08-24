@@ -18,15 +18,16 @@ def get_config(user_config_file):
         "minlen": 36,
         "fastqc_dir": ""
     }
-
+    
     if user_config_file is None:
         default_user_config_fp = os.path.expanduser("~/.illqc.json")
         if os.path.exists(default_user_config_fp):
             user_config_file = open(default_user_config_fp)
-
+    
     if user_config_file is not None:
         user_config = json.load(user_config_file)
         config.update(user_config)
+    
     return config
 
 
@@ -85,7 +86,7 @@ class Trimmomatic(object):
                 # Really hacky: split up all words and select the
                 # values we want. See test for expected output.
                 toks = line.split()
-                keys = ("input", "both kept", "fwd only", "rev only", "dropped")
+                keys = ("input", "both_kept", "fwd_only", "rev_only", "dropped")
                 vals = (toks[3], toks[6], toks[11], toks[16], toks[19])
                 vals = tuple(int(x) for x in vals)
                 return dict(zip(keys, vals))
@@ -93,8 +94,8 @@ class Trimmomatic(object):
             "Summary line not found in trimming output: %s" % output)
 
 class Fastqc(object):
-    def __init__(sefl,config):
-        sefl.config = config
+    def __init__(self,config):
+        self.config = config
 
     def run(self, fwd_fp, rev_fp, out_dir):
         args = [
