@@ -19,7 +19,7 @@ def get_config(user_config_file):
         "trailing": 3,
         "slidingwindow": (4, 15),
         "minlen": 36,
-        "fastqc_dir": ""
+        "fastqc_dir": "fastqc"
     }
 
     if user_config_file is None:
@@ -96,8 +96,8 @@ class Trimmomatic(object):
             "Summary line not found in trimming output: %s" % output)
 
 class Fastqc(object):
-    def __init__(sefl,config):
-        sefl.config = config
+    def __init__(self,config):
+        self.config = config
 
     def make_command(self, fwd_fp, rev_fp, out_dir):
         return [
