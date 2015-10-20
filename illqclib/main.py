@@ -16,7 +16,8 @@ def get_config(user_config_file):
         "trailing": 3,
         "slidingwindow": (4, 15),
         "minlen": 36,
-        "fastqc_dir": "fastqc"
+        "fastqc_dir": "fastqc",
+        "java_heapsize": "512M"
     }
     
     if user_config_file is None:
@@ -58,7 +59,7 @@ class Trimmomatic(object):
         trimlog_fp = os.path.join(out_dir, "trimmomatic.log")
 
         return [
-            "java", "-jar", self.config["trimmomatic_jar_fp"],
+            "java", "-Xmx"+self.config["java_heapsize"], "-jar", self.config["trimmomatic_jar_fp"],
             "PE","-phred33",
             fwd_fp, rev_fp,
             fwd_paired_fp, fwd_unpaired_fp,
