@@ -35,10 +35,11 @@ class TrimmomaticTests(unittest.TestCase):
             "trailing": 3,
             "slidingwindow": (4, 15),
             "minlen": 36,
+	    "java_heapsize":"200M"
             })
         observed = app.make_command("a.fastq", "b.fastq", "mydir")
         expected = [
-            'java', '-jar', 'trimmomatic-0.30.jar', 'PE', '-phred33',
+            'java', '-Xmx200M', '-jar', 'trimmomatic-0.30.jar', 'PE', '-phred33',
             'a.fastq', 'b.fastq',
             'mydir/a.fastq', 'mydir/a_unpaired.fastq',
             'mydir/b.fastq', 'mydir/b_unpaired.fastq',
