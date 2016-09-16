@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import argparse
 import collections
 import json
@@ -9,7 +10,7 @@ from .version import __version__
 
 def get_config(user_config_file):
     config = {
-        "trimmomatic_jar_fp": "trimmomatic-0.33.jar",
+        "trimmomatic_jar_fp": "trimmomatic.jar",
         "adapter_dir": "",
         "adapter": "NexteraPE-PE",
         "leading": 3,
@@ -83,7 +84,7 @@ class Trimmomatic(object):
     @staticmethod
     def parse_trim_summary(output):
         for line in output.splitlines():
-            if line.startswith("Input Read Pairs"):
+            if line.startswith(b"Input Read Pairs"):
                 # Really hacky: split up all words and select the
                 # values we want. See test for expected output.
                 toks = line.split()

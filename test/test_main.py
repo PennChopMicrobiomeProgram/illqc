@@ -24,7 +24,6 @@ class ConfigTests(unittest.TestCase):
             config = get_config(None)
             self.assertEqual(config["adapter_dir"], u"SOMECRAZYVALUE")
 
-
 class TrimmomaticTests(unittest.TestCase):
     def test_make_command(self):
         app = Trimmomatic({
@@ -35,7 +34,7 @@ class TrimmomaticTests(unittest.TestCase):
             "trailing": 3,
             "slidingwindow": (4, 15),
             "minlen": 36,
-	    "java_heapsize":"200M"
+            "java_heapsize":"200M"
             })
         observed = app.make_command("a.fastq", "b.fastq", "mydir")
         expected = [
@@ -47,3 +46,6 @@ class TrimmomaticTests(unittest.TestCase):
             'LEADING:3', 'TRAILING:3', 'SLIDINGWINDOW:4:15', 'MINLEN:36',
             ]
         self.assertEqual(observed, expected)
+
+if __name__ == "__main__":
+    unittest.main()
