@@ -67,7 +67,7 @@ class Trimmomatic(object):
             "ILLUMINACLIP:%s:2:30:10:8:true" % self._adapter_fp,
             "LEADING:%d" % self.config["leading"],
             "TRAILING:%d" % self.config["trailing"],
-            "SLIDINGWINDOW:%d:%d" % self.config["slidingwindow"],
+            "SLIDINGWINDOW:%d:%d" % tuple(self.config["slidingwindow"]),
             "MINLEN:%d" % self.config["minlen"],
             ]
 

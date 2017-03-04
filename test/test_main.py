@@ -26,17 +26,19 @@ class ConfigTests(unittest.TestCase):
 
 
 class TrimmomaticTests(unittest.TestCase):
+    config_vals = {
+        "trimmomatic_jar_fp": "trimmomatic-0.30.jar",
+        "adapter_dir": "adapters",
+        "adapter": "NexteraPE-PE",
+        "leading": 3,
+        "trailing": 3,
+        "slidingwindow": (4, 15),
+        "minlen": 36,
+        "java_heapsize":"200M"
+    }
+
     def test_make_command(self):
-        app = Trimmomatic({
-            "trimmomatic_jar_fp": "trimmomatic-0.30.jar",
-            "adapter_dir": "adapters",
-            "adapter": "NexteraPE-PE",
-            "leading": 3,
-            "trailing": 3,
-            "slidingwindow": (4, 15),
-            "minlen": 36,
-	    "java_heapsize":"200M"
-            })
+        app = Trimmomatic(self.config_vals)
         observed = app.make_command("a.fastq", "b.fastq", "mydir")
         expected = [
             'java', '-Xmx200M', '-jar', 'trimmomatic-0.30.jar', 'PE', '-phred33',
@@ -45,5 +47,20 @@ class TrimmomaticTests(unittest.TestCase):
             'mydir/b.fastq', 'mydir/b_unpaired.fastq',
             'ILLUMINACLIP:adapters/NexteraPE-PE.fa:2:30:10:8:true',
             'LEADING:3', 'TRAILING:3', 'SLIDINGWINDOW:4:15', 'MINLEN:36',
+            ]
+        self.assertEqual(observed, expected)
+
+    def test_make_command_sliding_window_as_list(self):
+        config_vals = self.config_vals.copy()
+        config_vals["slidingwindow"] = [6, 32]
+        app = Trimmomatic(config_vals)
+        observed = app.make_command("a.fastq", "b.fastq", "mydir")
+        expected = [
+            'java', '-Xmx200M', '-jar', 'trimmomatic-0.30.jar', 'PE', '-phred33',
+            'a.fastq', 'b.fastq',
+            'mydir/a.fastq', 'mydir/a_unpaired.fastq',
+            'mydir/b.fastq', 'mydir/b_unpaired.fastq',
+            'ILLUMINACLIP:adapters/NexteraPE-PE.fa:2:30:10:8:true',
+            'LEADING:3', 'TRAILING:3', 'SLIDINGWINDOW:6:32', 'MINLEN:36',
             ]
         self.assertEqual(observed, expected)
