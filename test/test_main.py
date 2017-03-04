@@ -2,7 +2,6 @@ import os
 import shutil
 import tempfile
 import unittest
-import StringIO
 
 from illqclib.main import (
     Trimmomatic, get_config,
